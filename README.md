@@ -65,16 +65,6 @@ follow the steps below **in order** to build the full Kafka system using Java.
 ## 1️⃣ Create a Java + Maven Project 
 
 
-
-Generate a Maven project with:
-
-### Required Dependencies
-Include these in `pom.xml`:
-
-- Kafka Clients
-- Kafka Avro Serializer
-- Confluent Schema Registry Client
-- Avro
 - SLF4J
 - Maven Exec Plugin
 
