@@ -62,7 +62,9 @@ follow the steps below **in order** to build the full Kafka system using Java.
 
 ---
 
-## 1️⃣ Create a Java + Maven Project
+## 1️⃣ Create a Java + Maven Project 
+
+
 
 Generate a Maven project with:
 
