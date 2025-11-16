@@ -53,6 +53,7 @@ docker run --rm \
 ```
 
 ### Run the producer
+
 ```bash
 docker run --rm \
   -e MAIN_CLASS=com.example.kafka.controller.ProducerController \
