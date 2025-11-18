@@ -1,4 +1,4 @@
-package com.example.kafka.service;
+package com.kafka.service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

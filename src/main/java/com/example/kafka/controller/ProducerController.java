@@ -1,9 +1,9 @@
-package com.example.kafka.controller;
+package com.kafka.controller;
 
-import com.example.kafka.config.KafkaPropertiesFactory;
-import com.example.kafka.config.PropertiesLoader;
-import com.example.kafka.config.SchemaLoader;
-import com.example.kafka.service.OrderProducerService;
+import com.kafka.config.KafkaPropertiesFactory;
+import com.kafka.config.PropertiesLoader;
+import com.kafka.config.SchemaLoader;
+import com.kafka.service.OrderProducerService;
 import org.apache.avro.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
