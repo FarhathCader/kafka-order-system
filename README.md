@@ -3,7 +3,7 @@
 Simple producer/consumer demo that sends order events to Kafka, retries transient failures, and moves permanent ones to a DLQ.
 
 ## Quick start (local)
-Needs Java 17+, Maven 3.9+, and access to Kafka (plus Schema Registry if you use Avro). Default settings live in `src/main/resources/application.properties`.
+Needs Java 17+, Maven 3.9+, Kafka, **and** a reachable Schema Registry (the app always uses Avro serializers). Default settings live in `src/main/resources/application.properties`.
 
 ```bash
 # build
