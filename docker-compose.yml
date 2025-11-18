@@ -46,6 +46,7 @@ services:
       - kafka
       - schema-registry
     environment:
+      MAIN_CLASS: com.example.kafka.KafkaOrderSystemApplication
       DEMO_MODE: both
       DEMO_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       DEMO_KAFKA_SCHEMA_REGISTRY_URL: http://schema-registry:8081
