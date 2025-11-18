@@ -5,6 +5,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.kafka.common.header.Header;
 
 public class DlqService {
     private static final Logger LOGGER = LoggerFactory.getLogger(DlqService.class);
@@ -19,7 +20,9 @@ public class DlqService {
 
     public void send(ConsumerRecord<String, Object> record) {
         ProducerRecord<String, Object> dlqRecord = new ProducerRecord<>(dlqTopic, record.key(), record.value());
-        dlqRecord.headers().add(record.headers());
+        for (Header header : record.headers()) {
+            dlqRecord.headers().add(header.key(), header.value());
+        }
         producer.send(dlqRecord, (metadata, exception) -> {
             if (exception != null) {
                 LOGGER.error("Failed to send record to DLQ", exception);
