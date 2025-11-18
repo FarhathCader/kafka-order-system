@@ -67,6 +67,27 @@ docker run --rm \
 >   -v /path/to/custom/application.properties:/app/application.properties:ro \
 >   kafka-order-system
 > ```
+## Docker Compose (Kafka + Schema Registry)
+Use `docker-compose.yml` to spin up local Kafka and Schema Registry instances that match the defaults in `application.properties`.
+
+> Why both a Dockerfile and a compose file? The Dockerfile builds a runnable image for the app itself (producer or consumer), while the compose file only provisions the Kafka infrastructure. Use `docker run ...` when you want to containerize the app, or extend `docker-compose.yml` with another service that builds from the Dockerfile if you prefer everything managed in one stack.
+
+1. Start the infrastructure:
+   ```bash
+   docker compose up -d zookeeper kafka schema-registry
+   ```
+
+2. Run the app against the containers from your host machine (producer example):
+   ```bash
+   mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ProducerController"
+   ```
+
+   Use the consumer entrypoint instead to aggregate and handle retries:
+   ```bash
+   mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ConsumerController"
+   ```
+
+The compose file exposes Kafka on `localhost:9092` and Schema Registry on `localhost:8081`, so the default properties work without changes. Stop the stack with `docker compose down` when finished.
 
 ## Kafka topics
 The application expects the following topics to exist:
