@@ -18,5 +18,5 @@ COPY --from=build /app/target/kafka-order-system-1.0-SNAPSHOT.jar ./app.jar
 COPY --from=build /app/target/dependency ./lib
 
 # Default to the consumer controller; override MAIN_CLASS to switch entrypoints
-ENV MAIN_CLASS=com.kafka.controller.ConsumerController
+ENV MAIN_CLASS=com.example.kafka.controller.ConsumerController
 ENTRYPOINT ["sh", "-c", "java -cp app.jar:lib/* ${MAIN_CLASS}"]
