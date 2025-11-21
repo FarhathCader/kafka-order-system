@@ -1,198 +1,79 @@
 # Kafka Order Processing System (Java + Avro)
 
-This repository contains an implementation of the **Assignment – Chapter 3**:  
-A Kafka-based distributed system that **produces and consumes order messages** using **Java**, **Avro serialization**, **retry logic**, **DLQ**, and **real-time aggregation**.
+Kafka-based producer/consumer demo that publishes order events, retries transient failures, forwards permanently failed messages to a DLQ, and keeps a running average of order prices per product.
 
-The assignment details come from the provided instructions PDF.  
-Each order message contains:  
-- `orderId` – string  
-- `product` – string  
-- `price` – float  
-
-The system must support:  
-✔ Real-time aggregation (running average of prices)  
-✔ Retry logic for temporary failures  
-✔ Dead-Letter Queue for permanently failed messages  
-✔ Live demonstration  
-✔ Clean Git repository
-
----
-
-## 📁 Project Structure
-
+## Project Structure
 ```
-/src
-  /main/java/com/example/kafka
-      ProducerApp.java
-      ConsumerApp.java
-      AverageAggregator.java
-      RetryHandler.java
-      DlqProducer.java
-  /main/resources
-      order.avsc
-      application.properties
-pom.xml
-README.md
+src/main/java/com/example/kafka
+  ├─ config/        # helpers for loading schemas/properties and building Kafka configs
+  ├─ controller/    # ProducerController and ConsumerController entrypoints
+  ├─ model/         # Order domain record
+  └─ service/       # producer, consumer, retry, aggregation, and DLQ services
+src/main/resources  # Avro schema + application.properties
+pom.xml             # Maven build
+Dockerfile          # container build
 ```
 
----
+## Requirements
+- Java 17+
+- Maven 3.9+
+- Kafka broker and (optionally) Confluent Schema Registry reachable from your machine or container
 
-## 📦 Avro Schema
+## Local development
+1. Install dependencies and build:
+   ```bash
+   mvn -q -DskipTests package
+   ```
 
-Create the file:
+2. Start the producer (publishes random orders to the `orders` topic):
+   ```bash
+   mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ProducerController"
+   ```
 
-`src/main/resources/order.avsc`
+3. Start the consumer (aggregates, retries, DLQ):
+   ```bash
+   mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ConsumerController"
+   ```
 
-```json
-{
-  "namespace": "com.example.kafka",
-  "type": "record",
-  "name": "Order",
-  "fields": [
-    { "name": "orderId", "type": "string" },
-    { "name": "product", "type": "string" },
-    { "name": "price", "type": "float" }
-  ]
-}
+Configuration defaults live in `src/main/resources/application.properties`. Adjust broker, schema registry, retry, and topic settings there as needed. You can also point the app at an external file via the `APP_CONFIG_PATH` environment variable when starting either process.
+
+## Docker usage
+The Docker image builds the app with Maven and runs a chosen entrypoint based on `MAIN_CLASS`. To supply a custom properties file, set `APP_CONFIG_PATH` and mount it into the container.
+
+### Build the image
+```bash
+docker build -t kafka-order-system .
 ```
 
----
-
-follow the steps below **in order** to build the full Kafka system using Java.
-
----
-
-## 1️⃣ Create a Java + Maven Project
-
-Generate a Maven project with:
-
-### Required Dependencies
-Include these in `pom.xml`:
-
-- Kafka Clients
-- Kafka Avro Serializer
-- Confluent Schema Registry Client
-- Avro
-- SLF4J
-- Maven Exec Plugin
-
----
-
-## 2️⃣ Implement the Kafka **Order Producer**
-
-`ProducerApp.java` must:
-
-- Load the Avro schema
-- Generate random orders with:
-  - Random `orderId`
-  - Random product name
-  - Random price
-- Serialize using Avro
-- Publish to topic: **orders**
-- Allow configurable production rate
-
-### Producer Features
-
-- Use `KafkaAvroSerializer`
-- Ensure idempotent producer settings
-- Logging each message
-
----
-
-## 3️⃣ Implement the Kafka **Order Consumer**
-
-`ConsumerApp.java` must:
-
-### ✔ Deserialize using Avro  
-Use `KafkaAvroDeserializer`.
-
-### ✔ Real-time aggregation  
-Use a separate class `AverageAggregator` to:
-
-- Maintain running average of `price` per product
-- Print the updated average for each new message
-
-### ✔ Retry Logic  
-Create `RetryHandler` with:
-
-- Exponential backoff retry
-- Configurable max retries
-- Re-processing failed messages in `orders-retry`
-
-### ✔ Dead Letter Queue  
-If retries exceed the max limit:
-
-- Send message to topic: **orders-dlq**
-- Implement using `DlqProducer`
-
-### ✔ Logging  
-Every retry attempt must be logged.
-
----
-
-## 4️⃣ Create Kafka Topics
-
-Ensure the system uses these topics:
-
-| Purpose                | Topic Name     |
-|------------------------|----------------|
-| Main order messages    | `orders`       |
-| Retry processing       | `orders-retry` |
-| Dead Letter Queue (DLQ)| `orders-dlq`   |
-
----
-
-## 5️⃣ Add Configuration File
-
-Create:
-
-### `src/main/resources/application.properties`
-
-Include:
-
-- Kafka bootstrap server
-- Schema registry URL
-- Producer configs
-- Consumer configs
-- Retry settings
-- DLQ topic name
-
----
-
-## 6️⃣ Running the System
-
-### Start Producer
-```
-mvn exec:java -Dexec.mainClass="com.example.kafka.ProducerApp"
+### Run the consumer (default)
+```bash
+docker run --rm \
+  -e MAIN_CLASS=com.example.kafka.controller.ConsumerController \
+  kafka-order-system
 ```
 
-### Start Consumer
+### Run the producer
+```bash
+docker run --rm \
+  -e MAIN_CLASS=com.example.kafka.controller.ProducerController \
+  kafka-order-system
 ```
-mvn exec:java -Dexec.mainClass="com.example.kafka.ConsumerApp"
-```
 
----
+> The container bundles the default `application.properties`. If you need to provide a different configuration, mount it over the packaged file:
+> ```bash
+> docker run --rm \
+>   -e MAIN_CLASS=com.example.kafka.controller.ConsumerController \
+>   -e APP_CONFIG_PATH=/app/application.properties \
+>   -v /path/to/custom/application.properties:/app/application.properties:ro \
+>   kafka-order-system
+> ```
 
-## 7️⃣ Error Handling & Logging
+## Kafka topics
+The application expects the following topics to exist:
+- `orders` (main stream)
+- `orders-retry` (temporary failures)
+- `orders-dlq` (permanent failures)
 
-Implement:
-
-- Try/catch around all Kafka operations
-- Custom exceptions for retryable vs non-retryable errors
-- Logging for:
-  - New messages
-  - Aggregation updates
-  - Retry attempts
-  - DLQ handling
-
----
-
-# ✅ Completion Checklist
-
-- [ ] Producer publishes Avro messages
-- [ ] Consumer deserializes Avro messages
-- [ ] Running average works continuously
-- [ ] Retry system successfully retries failed messages
-- [ ] DLQ messages appear in `orders-dlq`
-- [ ] Compilation + runtime working with Maven
-
+## Notes
+- Logs provide visibility into produced messages, aggregation updates, retry attempts, and DLQ forwarding.
+- Idempotent producer settings are enabled in the Kafka properties to reduce duplicate deliveries.
