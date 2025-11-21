@@ -1,6 +1,6 @@
-package com.kafka.service;
+package com.example.kafka.service;
 
-import com.kafka.model.Order;
+import com.example.kafka.model.Order;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
