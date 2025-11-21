@@ -1,4 +1,4 @@
-package com.example.kafka.config;
+package com.kafka.config;
 
 import java.io.FileInputStream;
 import java.io.IOException;

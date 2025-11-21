@@ -1,4 +1,4 @@
-package com.example.kafka.config;
+package com.kafka.config;
 
 import org.apache.avro.Schema;
 

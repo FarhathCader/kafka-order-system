@@ -1,11 +1,11 @@
-package com.example.kafka.controller;
+package com.kafka.controller;
 
-import com.example.kafka.config.KafkaPropertiesFactory;
-import com.example.kafka.config.PropertiesLoader;
-import com.example.kafka.service.AverageAggregator;
-import com.example.kafka.service.DlqService;
-import com.example.kafka.service.OrderConsumerService;
-import com.example.kafka.service.RetryService;
+import com.kafka.config.KafkaPropertiesFactory;
+import com.kafka.config.PropertiesLoader;
+import com.kafka.service.AverageAggregator;
+import com.kafka.service.DlqService;
+import com.kafka.service.OrderConsumerService;
+import com.kafka.service.RetryService;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.slf4j.Logger;
