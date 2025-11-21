@@ -1,4 +1,4 @@
-package com.example.kafka.model;
+package com.kafka.model;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
