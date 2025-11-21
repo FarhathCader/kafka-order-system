@@ -1,100 +1,45 @@
-# Kafka Order Processing System (Java + Avro)
+# Kafka Order Processing System
 
-Kafka-based producer/consumer demo that publishes order events, retries transient failures, forwards permanently failed messages to a DLQ, and keeps a running average of order prices per product.
+Simple producer/consumer demo that sends order events to Kafka, retries transient failures, and moves permanent ones to a DLQ.
 
-## Project Structure
-```
-src/main/java/com/example/kafka
-  ├─ config/        # helpers for loading schemas/properties and building Kafka configs
-  ├─ controller/    # ProducerController and ConsumerController entrypoints
-  ├─ model/         # Order domain record
-  └─ service/       # producer, consumer, retry, aggregation, and DLQ services
-src/main/resources  # Avro schema + application.properties
-pom.xml             # Maven build
-Dockerfile          # container build
-```
+## Quick start (local)
+Needs Java 17+, Maven 3.9+, and access to Kafka (plus Schema Registry if you use Avro). Default settings live in `src/main/resources/application.properties`.
 
-## Requirements
-- Java 17+
-- Maven 3.9+
-- Kafka broker and (optionally) Confluent Schema Registry reachable from your machine or container
-
-## Local development
-1. Install dependencies and build:
-   ```bash
-   mvn -q -DskipTests package
-   ```
-
-2. Start the producer (publishes random orders to the `orders` topic):
-   ```bash
-   mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ProducerController"
-   ```
-
-3. Start the consumer (aggregates, retries, DLQ):
-   ```bash
-   mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ConsumerController"
-   ```
-
-Configuration defaults live in `src/main/resources/application.properties`. Adjust broker, schema registry, retry, and topic settings there as needed. You can also point the app at an external file via the `APP_CONFIG_PATH` environment variable when starting either process.
-
-## Docker usage
-The Docker image builds the app with Maven and runs a chosen entrypoint based on `MAIN_CLASS`. To supply a custom properties file, set `APP_CONFIG_PATH` and mount it into the container.
-
-### Build the image
 ```bash
-docker build -t kafka-order-system .
+# build
+mvn -q -DskipTests package
+
+# run producer (writes random orders to "orders")
+mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ProducerController"
+
+# run consumer (aggregates, retries, DLQ)
+mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ConsumerController"
 ```
 
-### Run the consumer (default)
+Point to a different config with `APP_CONFIG_PATH=/path/to/application.properties` when launching either process.
+
+## Quick start (Docker)
+```bash
+# build image
+docker build -t kafka-order-system .
+
+# consumer (default)
+docker run --rm -e MAIN_CLASS=com.example.kafka.controller.ConsumerController kafka-order-system
+
+# producer
+docker run --rm -e MAIN_CLASS=com.example.kafka.controller.ProducerController kafka-order-system
+```
+
+Need custom config? Mount it and set `APP_CONFIG_PATH`:
 ```bash
 docker run --rm \
   -e MAIN_CLASS=com.example.kafka.controller.ConsumerController \
+  -e APP_CONFIG_PATH=/app/application.properties \
+  -v /path/to/application.properties:/app/application.properties:ro \
   kafka-order-system
 ```
-
-### Run the producer
-```bash
-docker run --rm \
-  -e MAIN_CLASS=com.example.kafka.controller.ProducerController \
-  kafka-order-system
-```
-
-> The container bundles the default `application.properties`. If you need to provide a different configuration, mount it over the packaged file:
-> ```bash
-> docker run --rm \
->   -e MAIN_CLASS=com.example.kafka.controller.ConsumerController \
->   -e APP_CONFIG_PATH=/app/application.properties \
->   -v /path/to/custom/application.properties:/app/application.properties:ro \
->   kafka-order-system
-> ```
-## Docker Compose (Kafka + Schema Registry)
-Use `docker-compose.yml` to spin up local Kafka and Schema Registry instances that match the defaults in `application.properties`.
-
-> Why both a Dockerfile and a compose file? The Dockerfile builds a runnable image for the app itself (producer or consumer), while the compose file only provisions the Kafka infrastructure. Use `docker run ...` when you want to containerize the app, or extend `docker-compose.yml` with another service that builds from the Dockerfile if you prefer everything managed in one stack.
-
-1. Start the infrastructure:
-   ```bash
-   docker compose up -d zookeeper kafka schema-registry
-   ```
-
-2. Run the app against the containers from your host machine (producer example):
-   ```bash
-   mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ProducerController"
-   ```
-
-   Use the consumer entrypoint instead to aggregate and handle retries:
-   ```bash
-   mvn -q exec:java -Dexec.mainClass="com.example.kafka.controller.ConsumerController"
-   ```
-
-The compose file exposes Kafka on `localhost:9092` and Schema Registry on `localhost:8081`, so the default properties work without changes. Stop the stack with `docker compose down` when finished.
 
 ## Kafka topics
-The application expects the following topics to exist:
-- `orders` (main stream)
+- `orders` (main)
 - `orders-retry` (temporary failures)
 - `orders-dlq` (permanent failures)
-
-## Notes
-- Logs provide visibility into produced messages, aggregation updates, retry attempts, and DLQ forwarding.
-- Idempotent producer settings are enabled in the Kafka properties to reduce duplicate deliveries.
