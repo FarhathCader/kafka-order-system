@@ -38,3 +38,17 @@ services:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+
+  app:
+    build: .
+    container_name: kafka-order-system-app
+    depends_on:
+      - kafka
+      - schema-registry
+    environment:
+      DEMO_MODE: both
+      DEMO_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DEMO_KAFKA_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    ports:
+      - "8080:8080"
+
