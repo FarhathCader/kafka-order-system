@@ -43,6 +43,8 @@ public class DemoProperties {
     public static class Kafka {
         private String bootstrapServers = "localhost:9092";
         private String schemaRegistryUrl = "http://localhost:8081";
+        private String schemaRegistryAuthCredentialsSource = "USER_INFO";
+        private String schemaRegistryAuthUserInfo = "";
 
         public String getBootstrapServers() {
             return bootstrapServers;
@@ -58,6 +60,22 @@ public class DemoProperties {
 
         public void setSchemaRegistryUrl(String schemaRegistryUrl) {
             this.schemaRegistryUrl = schemaRegistryUrl;
+        }
+
+        public String getSchemaRegistryAuthCredentialsSource() {
+            return schemaRegistryAuthCredentialsSource;
+        }
+
+        public void setSchemaRegistryAuthCredentialsSource(String schemaRegistryAuthCredentialsSource) {
+            this.schemaRegistryAuthCredentialsSource = schemaRegistryAuthCredentialsSource;
+        }
+
+        public String getSchemaRegistryAuthUserInfo() {
+            return schemaRegistryAuthUserInfo;
+        }
+
+        public void setSchemaRegistryAuthUserInfo(String schemaRegistryAuthUserInfo) {
+            this.schemaRegistryAuthUserInfo = schemaRegistryAuthUserInfo;
         }
     }
 
