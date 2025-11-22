@@ -15,6 +15,7 @@ public final class KafkaPropertiesFactory {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getKafka().getBootstrapServers());
         props.put("schema.registry.url", properties.getKafka().getSchemaRegistryUrl());
+        applySchemaRegistryAuthentication(props, properties);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
@@ -30,6 +31,7 @@ public final class KafkaPropertiesFactory {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getKafka().getBootstrapServers());
         props.put("schema.registry.url", properties.getKafka().getSchemaRegistryUrl());
+        applySchemaRegistryAuthentication(props, properties);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, properties.getConsumer().getGroupId());
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, properties.getConsumer().getClientId());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
@@ -46,5 +48,13 @@ public final class KafkaPropertiesFactory {
         retryProps.putAll(producerProps);
         retryProps.put(ProducerConfig.CLIENT_ID_CONFIG, properties.getConsumer().getClientId());
         return retryProps;
+    }
+
+    private static void applySchemaRegistryAuthentication(Properties props, DemoProperties properties) {
+        String userInfo = properties.getKafka().getSchemaRegistryAuthUserInfo();
+        if (userInfo != null && !userInfo.isBlank()) {
+            props.put("basic.auth.credentials.source", properties.getKafka().getSchemaRegistryAuthCredentialsSource());
+            props.put("basic.auth.user.info", userInfo);
+        }
     }
 }
