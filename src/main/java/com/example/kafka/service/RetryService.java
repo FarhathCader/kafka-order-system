@@ -33,21 +33,20 @@ public class RetryService {
         int attempt = currentAttempt(record) + 1;
         if (attempt <= maxAttempts) {
             long backoff = (long) (initialBackoffMs * Math.pow(2, attempt - 1));
-            LOGGER.log(Level.WARNING, "Retrying record with key {0} (attempt {1} of {2}), waiting {3} ms", new Object[]{
-                    record.key(), attempt, maxAttempts, backoff});
+            LOGGER.info(() -> "Retrying " + record.key() + " attempt " + attempt + "/" + maxAttempts
+                    + " after " + backoff + " ms");
             sleep(backoff);
             ProducerRecord<String, Object> retryRecord = new ProducerRecord<>(retryTopic, record.key(), record.value());
             retryRecord.headers().add(new RecordHeader("retries", String.valueOf(attempt).getBytes(StandardCharsets.UTF_8)));
             retryProducer.send(retryRecord, (metadata, sendEx) -> {
                 if (sendEx != null) {
-                    LOGGER.severe("Failed to send record to retry topic: " + sendEx.getMessage());
+                    LOGGER.severe("Failed to send to retry topic: " + sendEx.getMessage());
                 } else {
-                    LOGGER.info(() -> "Sent record to retry topic " + metadata.topic() + " partition "
-                            + metadata.partition() + " offset " + metadata.offset());
+                    LOGGER.info(() -> "Sent to retry topic offset " + metadata.offset() + " (key " + record.key() + ")");
                 }
             });
         } else {
-            LOGGER.log(Level.SEVERE, "Exceeded max retries for key {0}. Sending to DLQ", record.key());
+            LOGGER.severe(() -> "Exceeded max retries for key " + record.key() + ". Sending to DLQ");
             dlqService.send(record);
         }
     }

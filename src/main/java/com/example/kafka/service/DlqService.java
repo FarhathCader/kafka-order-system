@@ -27,8 +27,7 @@ public class DlqService {
             if (exception != null) {
                 LOGGER.severe("Failed to send record to DLQ: " + exception.getMessage());
             } else {
-                LOGGER.info(() -> "Sent record to DLQ topic " + metadata.topic() + " partition " + metadata.partition()
-                        + " offset " + metadata.offset());
+                LOGGER.info(() -> "Sent to DLQ offset " + metadata.offset() + " (key " + record.key() + ")");
             }
         });
     }
