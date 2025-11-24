@@ -17,6 +17,8 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
 import org.apache.kafka.streams.KeyValue;
+import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -38,15 +40,32 @@ public final class StreamsAverageMain {
         Properties streamsProps = KafkaPropertiesFactory.streams(demoProperties);
         Topology topology = buildTopology(demoProperties);
 
-        try (KafkaStreams streams = new KafkaStreams(topology, streamsProps)) {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                LOGGER.info("Stopping Kafka Streams application");
-                streams.close(Duration.ofSeconds(5));
-            }));
+//        try (KafkaStreams streams = new KafkaStreams(topology, streamsProps)) {
+//            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+//                LOGGER.info("Stopping Kafka Streams application");
+//                streams.close(Duration.ofSeconds(5));
+//            }));
+        KafkaStreams streams = new KafkaStreams(topology, streamsProps);
+        CountDownLatch latch = new CountDownLatch(1);
 
-            LOGGER.info(() -> "Starting Kafka Streams running average on " + demoProperties.getTopic().getOrders());
+//            LOGGER.info(() -> "Starting Kafka Streams running average on " + demoProperties.getTopic().getOrders());
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOGGER.info("Stopping Kafka Streams application");
+            streams.close(Duration.ofSeconds(5));
+            latch.countDown();
+        }));
+
+        LOGGER.info(() -> "Starting Kafka Streams running average on " + demoProperties.getTopic().getOrders());
+        try {
             streams.start();
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.log(Level.WARNING, "Kafka Streams interrupted", e);
+        } finally {
+            streams.close(Duration.ofSeconds(5));
         }
+
     }
 
     private static Topology buildTopology(DemoProperties demoProperties) {
