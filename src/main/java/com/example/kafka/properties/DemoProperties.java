@@ -1,8 +1,7 @@
 package com.example.kafka.properties;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import java.util.Properties;
 
-@ConfigurationProperties(prefix = "demo")
 public class DemoProperties {
 
     private final Kafka kafka = new Kafka();
@@ -11,6 +10,67 @@ public class DemoProperties {
     private final Consumer consumer = new Consumer();
     private final Retry retry = new Retry();
     private String mode = "producer";
+
+    public static DemoProperties from(Properties props) {
+        DemoProperties config = new DemoProperties();
+
+        String modeValue = props.getProperty("demo.mode");
+        if (modeValue != null) {
+            config.setMode(modeValue.trim());
+        }
+
+        Kafka kafka = config.getKafka();
+        setIfPresent(props, "demo.kafka.bootstrap-servers", kafka::setBootstrapServers);
+        setIfPresent(props, "demo.kafka.schema-registry-url", kafka::setSchemaRegistryUrl);
+        setIfPresent(props, "demo.kafka.schema-registry-auth-credentials-source", kafka::setSchemaRegistryAuthCredentialsSource);
+        setIfPresent(props, "demo.kafka.schema-registry-auth-user-info", kafka::setSchemaRegistryAuthUserInfo);
+
+        Topic topic = config.getTopic();
+        setIfPresent(props, "demo.topic.orders", topic::setOrders);
+        setIfPresent(props, "demo.topic.retry", topic::setRetry);
+        setIfPresent(props, "demo.topic.dlq", topic::setDlq);
+        setIfPresent(props, "demo.topic.average", topic::setAverage);
+
+        Producer producer = config.getProducer();
+        setIfPresentInt(props, "demo.producer.linger-ms", producer::setLingerMs);
+        setIfPresentInt(props, "demo.producer.batch-size", producer::setBatchSize);
+        setIfPresentInt(props, "demo.producer.retries", producer::setRetries);
+        setIfPresent(props, "demo.producer.acks", producer::setAcks);
+        setIfPresent(props, "demo.producer.client-id", producer::setClientId);
+        setIfPresentInt(props, "demo.producer.messages-per-second", producer::setMessagesPerSecond);
+
+        Consumer consumer = config.getConsumer();
+        setIfPresent(props, "demo.consumer.group-id", consumer::setGroupId);
+        setIfPresent(props, "demo.consumer.client-id", consumer::setClientId);
+        setIfPresentInt(props, "demo.consumer.max-poll-records", consumer::setMaxPollRecords);
+
+        Retry retry = config.getRetry();
+        setIfPresentInt(props, "demo.retry.max-attempts", retry::setMaxAttempts);
+        setIfPresentLong(props, "demo.retry.initial-backoff-ms", retry::setInitialBackoffMs);
+
+        return config;
+    }
+
+    private static void setIfPresent(Properties props, String key, java.util.function.Consumer<String> setter) {
+        String value = props.getProperty(key);
+        if (value != null) {
+            setter.accept(value.trim());
+        }
+    }
+
+    private static void setIfPresentInt(Properties props, String key, java.util.function.IntConsumer setter) {
+        String value = props.getProperty(key);
+        if (value != null) {
+            setter.accept(Integer.parseInt(value.trim()));
+        }
+    }
+
+    private static void setIfPresentLong(Properties props, String key, java.util.function.LongConsumer setter) {
+        String value = props.getProperty(key);
+        if (value != null) {
+            setter.accept(Long.parseLong(value.trim()));
+        }
+    }
 
     public Kafka getKafka() {
         return kafka;
@@ -83,6 +143,7 @@ public class DemoProperties {
         private String orders = "orders";
         private String retry = "orders-retry";
         private String dlq = "orders-dlq";
+        private String average = "orders-average";
 
         public String getOrders() {
             return orders;
@@ -106,6 +167,14 @@ public class DemoProperties {
 
         public void setDlq(String dlq) {
             this.dlq = dlq;
+        }
+
+        public String getAverage() {
+            return average;
+        }
+
+        public void setAverage(String average) {
+            this.average = average;
         }
     }
 

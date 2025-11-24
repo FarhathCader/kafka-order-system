@@ -5,16 +5,15 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 public class OrderProducerService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OrderProducerService.class);
+    private static final Logger LOGGER = Logger.getLogger(OrderProducerService.class.getName());
 
     private final Properties producerProps;
     private final Schema schema;
@@ -32,7 +31,7 @@ public class OrderProducerService {
 
     public void startProducing() throws InterruptedException {
         try (KafkaProducer<String, GenericRecord> producer = new KafkaProducer<>(producerProps)) {
-            LOGGER.info("Starting producer sending to topic {} at {} msg/sec", topic, messagesPerSecond);
+            LOGGER.info(() -> "Starting producer sending to topic " + topic + " at " + messagesPerSecond + " msg/sec");
             while (true) {
                 Order order = randomOrder();
                 GenericRecord record = order.toGenericRecord(schema);
@@ -40,13 +39,14 @@ public class OrderProducerService {
                 ProducerRecord<String, GenericRecord> producerRecord = new ProducerRecord<>(topic, order.getOrderId(), record);
                 producer.send(producerRecord, (metadata, exception) -> {
                     if (exception != null) {
-                        LOGGER.error("Failed to send message", exception);
+                        LOGGER.severe("Failed to send message: " + exception.getMessage());
                     } else {
-                        LOGGER.info("Produced record to topic {} partition {} offset {}", metadata.topic(), metadata.partition(), metadata.offset());
+                        LOGGER.info(() -> "Produced record to topic " + metadata.topic()
+                                + " partition " + metadata.partition() + " offset " + metadata.offset());
                     }
                 });
 
-                Thread.sleep(Duration.ofSeconds(1).toMillis() / messagesPerSecond);
+                Thread.sleep(Duration.ofSeconds(1).toMillis() / Math.max(1, messagesPerSecond));
             }
         }
     }
