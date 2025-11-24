@@ -8,7 +8,7 @@
    ```
 3. Launch the Spring Boot app (producing and consuming in one JVM):
    ```bash
-    mvn spring-boot:run -Dspring-boot.run.arguments="--demo.mode=both --demo.kafka.bootstrap-servers=localhost:9092 --demo.kafka.schema-registry-url=http://localhost:8081"
+    mvn spring-boot:run -D"spring-boot.run.arguments=--demo.mode=both --demo.kafka.bootstrap-servers=localhost:9092 --demo.kafka.schema-registry-url=http://localhost:8081"
    ```
 4. Watch the logs to confirm orders are being produced and consumed:
    ```bash

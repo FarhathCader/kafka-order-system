@@ -32,22 +32,22 @@ public class OrderProducerService {
     public void startProducing() throws InterruptedException {
         try (KafkaProducer<String, GenericRecord> producer = new KafkaProducer<>(producerProps)) {
             LOGGER.info(() -> "Starting producer sending to topic " + topic + " at " + messagesPerSecond + " msg/sec");
-            while (true) {
-                Order order = randomOrder();
-                GenericRecord record = order.toGenericRecord(schema);
 
-                ProducerRecord<String, GenericRecord> producerRecord = new ProducerRecord<>(topic, order.getOrderId(), record);
-                producer.send(producerRecord, (metadata, exception) -> {
-                    if (exception != null) {
-                        LOGGER.severe("Failed to send message: " + exception.getMessage());
-                    } else {
-                        LOGGER.info(() -> "Produced record to topic " + metadata.topic()
-                                + " partition " + metadata.partition() + " offset " + metadata.offset());
-                    }
-                });
-
-                Thread.sleep(Duration.ofSeconds(1).toMillis() / Math.max(1, messagesPerSecond));
+            for (int i = 0; i < 10; i++) {
+                sendOrder(producer, randomOrder());
             }
+
+            Order temporaryFailureOrder = new Order(UUID.randomUUID().toString(), "temporary-failure", 199.99);
+            sendOrder(producer, temporaryFailureOrder);
+            LOGGER.info(() -> "Submitted temporary-failure order " + temporaryFailureOrder.getOrderId());
+
+            Order invalidOrder = new Order(UUID.randomUUID().toString(), "invalid-order", 0.0);
+            sendOrder(producer, invalidOrder);
+            LOGGER.info(() -> "Submitted invalid-order " + invalidOrder.getOrderId());
+
+            producer.flush();
+            LOGGER.info("Finished sending demo orders.");
+
         }
     }
 
@@ -55,5 +55,21 @@ public class OrderProducerService {
         String product = products[random.nextInt(products.length)];
         double price = 50 + (250 * random.nextFloat());
         return new Order(UUID.randomUUID().toString(), product, price);
+    }
+
+    private void sendOrder(KafkaProducer<String, GenericRecord> producer, Order order) throws InterruptedException {
+        GenericRecord record = order.toGenericRecord(schema);
+
+        ProducerRecord<String, GenericRecord> producerRecord = new ProducerRecord<>(topic, order.getOrderId(), record);
+        producer.send(producerRecord, (metadata, exception) -> {
+            if (exception != null) {
+                LOGGER.severe("Failed to send message: " + exception.getMessage());
+            } else {
+                LOGGER.info(() -> "Produced record to topic " + metadata.topic()
+                        + " partition " + metadata.partition() + " offset " + metadata.offset());
+            }
+        });
+
+        Thread.sleep(Duration.ofSeconds(1).toMillis() / Math.max(1, messagesPerSecond));
     }
 }
