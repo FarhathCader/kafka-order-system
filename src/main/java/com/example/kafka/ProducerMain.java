@@ -4,6 +4,7 @@ import com.example.kafka.config.KafkaPropertiesFactory;
 import com.example.kafka.config.PropertiesLoader;
 import com.example.kafka.config.SchemaLoader;
 import com.example.kafka.properties.DemoProperties;
+import com.example.kafka.config.LoggingConfigurator;
 import com.example.kafka.service.OrderProducerService;
 import org.apache.avro.Schema;
 
@@ -17,6 +18,7 @@ public final class ProducerMain {
     }
 
     public static void main(String[] args) throws Exception {
+        LoggingConfigurator.configure();
         Properties fileProps = PropertiesLoader.load("application.properties");
         DemoProperties demoProperties = DemoProperties.from(fileProps);
 
@@ -30,7 +32,7 @@ public final class ProducerMain {
                 demoProperties.getProducer().getMessagesPerSecond()
         );
 
-        LOGGER.info(() -> "Starting plain Java producer on topic " + demoProperties.getTopic().getOrders());
+        LOGGER.info(() -> "Starting producer on topic " + demoProperties.getTopic().getOrders());
         producerService.startProducing();
     }
 }

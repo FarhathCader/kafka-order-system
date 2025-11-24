@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class OrderProducerService {
@@ -21,6 +22,7 @@ public class OrderProducerService {
     private final int messagesPerSecond;
     private final Random random = new Random();
     private final String[] products = new String[]{"keyboard", "mouse", "monitor", "laptop", "dock"};
+    private final AtomicInteger orderCounter = new AtomicInteger(0);
 
     public OrderProducerService(Properties producerProps, Schema schema, String topic, int messagesPerSecond) {
         this.producerProps = producerProps;
@@ -31,19 +33,20 @@ public class OrderProducerService {
 
     public void startProducing() throws InterruptedException {
         try (KafkaProducer<String, GenericRecord> producer = new KafkaProducer<>(producerProps)) {
-            LOGGER.info(() -> "Starting producer sending to topic " + topic + " at " + messagesPerSecond + " msg/sec");
+            LOGGER.info(() -> "Starting producer on topic " + topic + " at " + messagesPerSecond + " msg/sec");
 
             for (int i = 0; i < 10; i++) {
-                sendOrder(producer, randomOrder());
+                int orderNumber = orderCounter.incrementAndGet();
+                sendOrder(producer, randomOrder(), "order " + orderNumber);
             }
 
             Order temporaryFailureOrder = new Order(UUID.randomUUID().toString(), "temporary-failure", 199.99);
-            sendOrder(producer, temporaryFailureOrder);
-            LOGGER.info(() -> "Submitted temporary-failure order " + temporaryFailureOrder.getOrderId());
+            LOGGER.info(() -> "Submitted temporary-failure order " + shortId(temporaryFailureOrder.getOrderId()));
+            sendOrder(producer, temporaryFailureOrder, "temporary-failure order " + shortId(temporaryFailureOrder.getOrderId()));
 
             Order invalidOrder = new Order(UUID.randomUUID().toString(), "invalid-order", 0.0);
-            sendOrder(producer, invalidOrder);
-            LOGGER.info(() -> "Submitted invalid-order " + invalidOrder.getOrderId());
+            LOGGER.info(() -> "Submitted invalid-order " + shortId(invalidOrder.getOrderId()));
+            sendOrder(producer, invalidOrder, "invalid-order " + shortId(invalidOrder.getOrderId()));
 
             producer.flush();
             LOGGER.info("Finished sending demo orders.");
@@ -57,19 +60,25 @@ public class OrderProducerService {
         return new Order(UUID.randomUUID().toString(), product, price);
     }
 
-    private void sendOrder(KafkaProducer<String, GenericRecord> producer, Order order) throws InterruptedException {
+    private void sendOrder(KafkaProducer<String, GenericRecord> producer, Order order, String label) throws InterruptedException {
         GenericRecord record = order.toGenericRecord(schema);
 
         ProducerRecord<String, GenericRecord> producerRecord = new ProducerRecord<>(topic, order.getOrderId(), record);
         producer.send(producerRecord, (metadata, exception) -> {
             if (exception != null) {
-                LOGGER.severe("Failed to send message: " + exception.getMessage());
+                LOGGER.severe(() -> "Failed to send " + label + ": " + exception.getMessage());
             } else {
-                LOGGER.info(() -> "Produced record to topic " + metadata.topic()
-                        + " partition " + metadata.partition() + " offset " + metadata.offset());
+                LOGGER.info(() -> "Sent " + label + " → offset " + metadata.offset());
             }
         });
 
         Thread.sleep(Duration.ofSeconds(1).toMillis() / Math.max(1, messagesPerSecond));
+    }
+
+    private String shortId(String id) {
+        if (id == null || id.length() <= 4) {
+            return id;
+        }
+        return id.substring(0, 4) + "...";
     }
 }

@@ -7,6 +7,7 @@ import com.example.kafka.service.AverageAggregator;
 import com.example.kafka.service.DlqService;
 import com.example.kafka.service.OrderConsumerService;
 import com.example.kafka.service.RetryService;
+import com.example.kafka.config.LoggingConfigurator;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 
@@ -21,6 +22,7 @@ public final class ConsumerMain {
     }
 
     public static void main(String[] args) throws Exception {
+        LoggingConfigurator.configure();
         Properties fileProps = PropertiesLoader.load("application.properties");
         DemoProperties demoProperties = DemoProperties.from(fileProps);
 
@@ -56,7 +58,7 @@ public final class ConsumerMain {
                 dlqProducer.close(Duration.ofSeconds(5));
             }));
 
-            LOGGER.info(() -> "Starting plain Java consumer for topics "
+            LOGGER.info(() -> "Starting consumer for topics "
                     + demoProperties.getTopic().getOrders() + " and " + demoProperties.getTopic().getRetry());
             consumerService.start();
         }

@@ -74,8 +74,8 @@ public class OrderConsumerService {
         Order order = Order.fromGenericRecord(genericRecord);
         enforceDemoFailures(order);
         double average = averageAggregator.updateAverage(order.getProduct(), order.getPrice());
-        LOGGER.log(Level.INFO, "Consumed key {0} product {1} price {2} -> running average {3}",
-                new Object[]{record.key(), order.getProduct(), order.getPrice(), average});
+        LOGGER.info(() -> "Consumed " + order.getOrderId() + " (" + order.getProduct() + " $"
+                + String.format("%.2f", order.getPrice()) + ") → avg $" + String.format("%.2f", average));
     }
     private void enforceDemoFailures(Order order) {
         if ("temporary-failure".equalsIgnoreCase(order.getProduct())) {

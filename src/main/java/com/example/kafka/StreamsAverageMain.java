@@ -1,6 +1,7 @@
 package com.example.kafka;
 
 import com.example.kafka.config.KafkaPropertiesFactory;
+import com.example.kafka.config.LoggingConfigurator;
 import com.example.kafka.config.PropertiesLoader;
 import com.example.kafka.config.SchemaLoader;
 import com.example.kafka.properties.DemoProperties;
@@ -49,6 +50,7 @@ public final class StreamsAverageMain {
 //        }
 //    }
 public static void main(String[] args) throws Exception {
+    LoggingConfigurator.configure();
     Properties props = PropertiesLoader.load("application.properties");
     DemoProperties demoProperties = DemoProperties.from(props);
     SchemaLoader.load("order.avsc");
