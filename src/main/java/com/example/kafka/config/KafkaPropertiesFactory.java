@@ -3,6 +3,7 @@ package com.example.kafka.config;
 import com.example.kafka.properties.DemoProperties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.streams.StreamsConfig;
 
 import java.util.Properties;
 
@@ -48,6 +49,16 @@ public final class KafkaPropertiesFactory {
         retryProps.putAll(producerProps);
         retryProps.put(ProducerConfig.CLIENT_ID_CONFIG, properties.getConsumer().getClientId());
         return retryProps;
+    }
+
+    public static Properties streams(DemoProperties properties) {
+        Properties props = new Properties();
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, properties.getKafka().getBootstrapServers());
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, properties.getConsumer().getClientId() + "-streams");
+        props.put("schema.registry.url", properties.getKafka().getSchemaRegistryUrl());
+        applySchemaRegistryAuthentication(props, properties);
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, "org.apache.kafka.common.serialization.Serdes$StringSerde");
+        return props;
     }
 
     private static void applySchemaRegistryAuthentication(Properties props, DemoProperties properties) {

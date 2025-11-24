@@ -6,15 +6,15 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class OrderConsumerService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OrderConsumerService.class);
+    private static final Logger LOGGER = Logger.getLogger(OrderConsumerService.class.getName());
 
     private final KafkaConsumer<String, Object> consumer;
     private final RetryService retryService;
@@ -37,9 +37,9 @@ public class OrderConsumerService {
 
     public void start() {
         consumer.subscribe(Arrays.asList(ordersTopic, retryTopic));
-        LOGGER.info("Consumer started. Subscribed to {} and {}", ordersTopic, retryTopic);
-        while (running.get()) {
-            try {
+        LOGGER.info(() -> "Consumer started. Subscribed to " + ordersTopic + " and " + retryTopic);
+        try {
+            while (running.get()) {
                 ConsumerRecords<String, Object> records = consumer.poll(Duration.ofSeconds(1));
                 for (ConsumerRecord<String, Object> record : records) {
                     try {
@@ -49,11 +49,13 @@ public class OrderConsumerService {
                         retryService.handleFailure(record, ex);
                     }
                 }
-            } catch (WakeupException e) {
-                if (running.get()) {
-                    throw e;
-                }
             }
+        } catch (WakeupException e) {
+            if (running.get()) {
+                throw e;
+            }
+        } finally {
+            consumer.close();
         }
     }
 
@@ -69,6 +71,7 @@ public class OrderConsumerService {
         }
         Order order = Order.fromGenericRecord(genericRecord);
         double average = averageAggregator.updateAverage(order.getProduct(), order.getPrice());
-        LOGGER.info("Consumed key {} product {} price {} -> running average {}", record.key(), order.getProduct(), order.getPrice(), average);
+        LOGGER.log(Level.INFO, "Consumed key {0} product {1} price {2} -> running average {3}",
+                new Object[]{record.key(), order.getProduct(), order.getPrice(), average});
     }
 }

@@ -3,12 +3,12 @@ package com.example.kafka.service;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.kafka.common.header.Header;
 
+import java.util.logging.Logger;
+
 public class DlqService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DlqService.class);
+    private static final Logger LOGGER = Logger.getLogger(DlqService.class.getName());
 
     private final KafkaProducer<String, Object> producer;
     private final String dlqTopic;
@@ -25,9 +25,10 @@ public class DlqService {
         }
         producer.send(dlqRecord, (metadata, exception) -> {
             if (exception != null) {
-                LOGGER.error("Failed to send record to DLQ", exception);
+                LOGGER.severe("Failed to send record to DLQ: " + exception.getMessage());
             } else {
-                LOGGER.info("Sent record to DLQ topic {} partition {} offset {}", metadata.topic(), metadata.partition(), metadata.offset());
+                LOGGER.info(() -> "Sent record to DLQ topic " + metadata.topic() + " partition " + metadata.partition()
+                        + " offset " + metadata.offset());
             }
         });
     }
