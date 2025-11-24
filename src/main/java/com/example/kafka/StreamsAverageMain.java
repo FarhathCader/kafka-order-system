@@ -17,8 +17,6 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
 import org.apache.kafka.streams.KeyValue;
-import java.util.concurrent.CountDownLatch;
-import java.util.logging.Level;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -32,41 +30,46 @@ public final class StreamsAverageMain {
     private StreamsAverageMain() {
     }
 
-    public static void main(String[] args) throws Exception {
-        Properties props = PropertiesLoader.load("application.properties");
-        DemoProperties demoProperties = DemoProperties.from(props);
-        SchemaLoader.load("order.avsc");
-
-        Properties streamsProps = KafkaPropertiesFactory.streams(demoProperties);
-        Topology topology = buildTopology(demoProperties);
-
+//    public static void main(String[] args) throws Exception {
+//        Properties props = PropertiesLoader.load("application.properties");
+//        DemoProperties demoProperties = DemoProperties.from(props);
+//        SchemaLoader.load("order.avsc");
+//
+//        Properties streamsProps = KafkaPropertiesFactory.streams(demoProperties);
+//        Topology topology = buildTopology(demoProperties);
+//
 //        try (KafkaStreams streams = new KafkaStreams(topology, streamsProps)) {
 //            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 //                LOGGER.info("Stopping Kafka Streams application");
 //                streams.close(Duration.ofSeconds(5));
 //            }));
-        KafkaStreams streams = new KafkaStreams(topology, streamsProps);
-        CountDownLatch latch = new CountDownLatch(1);
-
+//
 //            LOGGER.info(() -> "Starting Kafka Streams running average on " + demoProperties.getTopic().getOrders());
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOGGER.info("Stopping Kafka Streams application");
-            streams.close(Duration.ofSeconds(5));
-            latch.countDown();
-        }));
+//            streams.start();
+//        }
+//    }
+public static void main(String[] args) throws Exception {
+    Properties props = PropertiesLoader.load("application.properties");
+    DemoProperties demoProperties = DemoProperties.from(props);
+    SchemaLoader.load("order.avsc");
 
-        LOGGER.info(() -> "Starting Kafka Streams running average on " + demoProperties.getTopic().getOrders());
-        try {
-            streams.start();
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOGGER.log(Level.WARNING, "Kafka Streams interrupted", e);
-        } finally {
-            streams.close(Duration.ofSeconds(5));
-        }
+    Properties streamsProps = KafkaPropertiesFactory.streams(demoProperties);
+    Topology topology = buildTopology(demoProperties);
 
-    }
+    KafkaStreams streams = new KafkaStreams(topology, streamsProps);
+
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        LOGGER.info("Stopping Kafka Streams application");
+        streams.close(Duration.ofSeconds(5));
+    }));
+
+    LOGGER.info(() -> "Starting Kafka Streams running average on " + demoProperties.getTopic().getOrders());
+
+    streams.start();
+
+    // --- BLOCK FOREVER (required for Kafka Streams 2.x) ---
+    Thread.sleep(Long.MAX_VALUE);
+}
 
     private static Topology buildTopology(DemoProperties demoProperties) {
         StreamsBuilder builder = new StreamsBuilder();
