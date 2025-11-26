@@ -31,19 +31,19 @@ mvn clean package
 
 ```bash
 # main consumer
-mvn exec:java -Dexec.mainClass="com.assignment.kafka.consumer.OrderConsumer"
+java -cp "target/kafka-order-system-1.0-SNAPSHOT.jar;target/dependency/*" com.assignment.kafka.consumer.OrderConsumer
 
 # retry consumer
-mvn exec:java -Dexec.mainClass="com.assignment.kafka.consumer.RetryConsumer"
+java -cp "target/kafka-order-system-1.0-SNAPSHOT.jar;target/dependency/*" com.assignment.kafka.consumer.RetryConsumer"
 
 # DLQ consumer (optional)
-mvn exec:java -Dexec.mainClass="com.assignment.kafka.consumer.DLQConsumer"
+java -cp "target/kafka-order-system-1.0-SNAPSHOT.jar;target/dependency/*" com.assignment.kafka.consumer.DLQConsumer"
 ```
 
 ## 4. Run the producer
 
 ```bash
-mvn exec:java -Dexec.mainClass="com.assignment.kafka.producer.OrderProducer"
+java -cp "target/kafka-order-system-1.0-SNAPSHOT.jar;target/dependency/*" com.assignment.kafka.producer.OrderProducer"
 ```
 
 The main consumer prints processed orders and a running average of price.
